@@ -1,0 +1,34 @@
+
+def my_model(X,y,is_training):
+    init_shape = [7, 7, 3, 32]
+    stride_conv=2
+    stride_pool=2
+    W_conv1 = (32-init_shape[0])//stride_conv + 1
+    W_conv2 = (W_conv1-init_shape[0])//stride_conv + 1
+    W_out = (W_conv2)//stride_pool + 1
+    W1_size = 32 * W_out**2
+    print(W_conv1, W_conv2, W_out, W1_size)
+    W1_size = 512
+    
+    Wconv1 = tf.get_variable("Wconv1", shape=init_shape)
+    bconv1 = tf.get_variable("bconv1", shape=[32])
+    Wconv2 = tf.get_variable("Wconv2", shape=[5,5,32,128])
+    bconv2 = tf.get_variable("bconv2", shape=[128])
+    W1 = tf.get_variable("W1", shape=[W1_size, 1024])
+    b1 = tf.get_variable("b1", shape=[1024])
+    W2 = tf.get_variable("W2", shape=[1024, 10])
+    b2 = tf.get_variable("b2", shape=[10])
+
+    a1 = tf.nn.conv2d(X, Wconv1, strides=[1,2,2,1], padding='VALID') + bconv1
+    h10 = tf.nn.relu(a1)
+    
+    a2 = tf.nn.conv2d(h10, Wconv2, strides=[1,2,2,1], padding='VALID') + bconv2
+    h20 = tf.nn.relu(a2)
+    h21 = tf.nn.batch_normalization(h20,mean=1.0,variance=1.0,offset=0.0,scale=1.0,variance_epsilon=0.001)
+    h2 = tf.nn.max_pool(h21,ksize=[1,2,2,1],strides=[1,2,2,1],padding='VALID',data_format='NHWC')
+    
+    h1_flat = tf.reshape(h2,[-1,W1_size])
+    h2 = tf.matmul(h1_flat,W1) + b1
+    h3 = tf.nn.relu(h2)
+    y_out = tf.matmul(h3,W2) + b2
+    return y_out
